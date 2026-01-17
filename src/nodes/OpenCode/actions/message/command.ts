@@ -33,22 +33,11 @@ export async function executeCommand(
 	}
 
 	try {
-		// Build payload
+		// Build payload - arguments must be a string, not an object
 		const payload: IDataObject = {
 			command,
+			arguments: commandArguments || '',
 		};
-
-		// Parse command arguments as JSON if provided
-		if (commandArguments) {
-			try {
-				payload.arguments = JSON.parse(commandArguments);
-			} catch {
-				// If not valid JSON, treat as simple key-value
-				payload.arguments = { input: commandArguments };
-			}
-		} else {
-			payload.arguments = {};
-		}
 
 		// Add optional parameters
 		if (messageId) {
