@@ -8,6 +8,83 @@ import {
 } from 'n8n-workflow';
 import { executeAction } from './actions';
 import { IProvider, ISession } from './types';
+import * as fs from 'fs';
+import * as path from 'path';
+import * as os from 'os';
+
+interface ISkillInfo {
+	name: string;
+	description: string;
+	path: string;
+}
+
+/**
+ * Parse YAML frontmatter from SKILL.md content
+ */
+function parseSkillFrontmatter(content: string): { name?: string; description?: string } {
+	const frontmatterMatch = content.match(/^---\s*\n([\s\S]*?)\n---/);
+	if (!frontmatterMatch) {
+		return {};
+	}
+
+	const frontmatter = frontmatterMatch[1];
+	const result: { name?: string; description?: string } = {};
+
+	// Parse name
+	const nameMatch = frontmatter.match(/^name:\s*(.+)$/m);
+	if (nameMatch) {
+		result.name = nameMatch[1].trim().replace(/^["']|["']$/g, '');
+	}
+
+	// Parse description
+	const descMatch = frontmatter.match(/^description:\s*(.+)$/m);
+	if (descMatch) {
+		result.description = descMatch[1].trim().replace(/^["']|["']$/g, '');
+	}
+
+	return result;
+}
+
+/**
+ * Scan a directory for skill folders containing SKILL.md
+ */
+function scanSkillDirectory(baseDir: string): ISkillInfo[] {
+	const skills: ISkillInfo[] = [];
+
+	try {
+		if (!fs.existsSync(baseDir)) {
+			return skills;
+		}
+
+		const entries = fs.readdirSync(baseDir, { withFileTypes: true });
+
+		for (const entry of entries) {
+			if (!entry.isDirectory()) continue;
+
+			const skillMdPath = path.join(baseDir, entry.name, 'SKILL.md');
+
+			if (fs.existsSync(skillMdPath)) {
+				try {
+					const content = fs.readFileSync(skillMdPath, 'utf-8');
+					const { name, description } = parseSkillFrontmatter(content);
+
+					skills.push({
+						name: name || entry.name,
+						description: description || `Skill: ${entry.name}`,
+						path: path.join(baseDir, entry.name),
+					});
+				} catch (err) {
+					// Skip files that can't be read
+					console.error(`Error reading ${skillMdPath}:`, err);
+				}
+			}
+		}
+	} catch (err) {
+		console.error(`Error scanning directory ${baseDir}:`, err);
+	}
+
+	return skills;
+}
 
 export class OpenCode implements INodeType {
 	description: INodeTypeDescription = {
@@ -146,6 +223,12 @@ export class OpenCode implements INodeType {
 						action: 'Run shell command',
 					},
 					{
+						name: 'Execute Skill',
+						value: 'skill',
+						description: 'Execute a skill with arguments',
+						action: 'Execute a skill',
+					},
+					{
 						name: 'List',
 						value: 'list',
 						description: 'Get all messages in a session',
@@ -210,7 +293,7 @@ export class OpenCode implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['message'],
-						operation: ['send', 'sendAsync', 'command', 'shell'],
+						operation: ['send', 'sendAsync', 'command', 'shell', 'skill'],
 					},
 				},
 				options: [
@@ -241,7 +324,7 @@ export class OpenCode implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['message'],
-						operation: ['send', 'sendAsync', 'command', 'shell'],
+						operation: ['send', 'sendAsync', 'command', 'shell', 'skill'],
 						sessionMode: ['existing'],
 					},
 				},
@@ -307,7 +390,7 @@ export class OpenCode implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['message'],
-						operation: ['send', 'sendAsync', 'command', 'shell'],
+						operation: ['send', 'sendAsync', 'command', 'shell', 'skill'],
 						sessionMode: ['temporary'],
 					},
 				},
@@ -360,7 +443,7 @@ export class OpenCode implements INodeType {
 				displayOptions: {
 					show: {
 						resource: ['message'],
-						operation: ['send', 'sendAsync', 'command', 'shell'],
+						operation: ['send', 'sendAsync', 'command', 'shell', 'skill'],
 					},
 				},
 				default: '',
@@ -474,6 +557,44 @@ export class OpenCode implements INodeType {
 				},
 				default: '',
 				description: 'Agent to use for executing the shell command',
+			},
+
+			// Skill (for skill operation)
+			{
+				displayName: 'Skill',
+				name: 'skill',
+				type: 'options',
+				typeOptions: {
+					loadOptionsMethod: 'getSkills',
+				},
+				required: true,
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['skill'],
+					},
+				},
+				default: '',
+				description: 'Select a skill to execute',
+			},
+
+			// Skill Arguments (for skill operation)
+			{
+				displayName: 'Skill Arguments',
+				name: 'skillArguments',
+				type: 'string',
+				typeOptions: {
+					rows: 4,
+				},
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['skill'],
+					},
+				},
+				default: '',
+				placeholder: 'Enter arguments for the skill...',
+				description: 'Arguments to pass to the skill',
 			},
 
 			// Options for send/sendAsync operations
@@ -651,6 +772,61 @@ export class OpenCode implements INodeType {
 					},
 				],
 			},
+
+			// Options for skill operation
+			{
+				displayName: 'Options',
+				name: 'options',
+				type: 'collection',
+				placeholder: 'Add Option',
+				default: {},
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['skill'],
+					},
+				},
+				options: [
+					{
+						displayName: 'Timeout (ms)',
+						name: 'timeout',
+						type: 'number',
+						default: 300000,
+						description: 'Request timeout in milliseconds (default: 300000 = 5 minutes)',
+					},
+					{
+						displayName: 'Trim Response',
+						name: 'trimResponse',
+						type: 'boolean',
+						default: true,
+						description: 'Whether to trim whitespace from the response text',
+					},
+					{
+						displayName: 'Response Key',
+						name: 'responseKey',
+						type: 'string',
+						default: 'response',
+						description: 'The key name for the response text in the output JSON',
+					},
+					{
+						displayName: 'Agent',
+						name: 'agent',
+						type: 'options',
+						typeOptions: {
+							loadOptionsMethod: 'getAgents',
+						},
+						default: '',
+						description: 'Agent to use for the skill (optional)',
+					},
+					{
+						displayName: 'Reference Message ID',
+						name: 'messageID',
+						type: 'string',
+						default: '',
+						description: 'Reference message ID for context (optional)',
+					},
+				],
+			},
 		],
 	};
 
@@ -810,6 +986,53 @@ export class OpenCode implements INodeType {
 				} catch (error) {
 					console.error('Error loading commands:', error);
 					return [{ name: 'Error loading commands', value: '' }];
+				}
+			},
+
+			async getSkills(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const homeDir = os.homedir();
+
+					// Skill directories to scan
+					const skillDirs = [
+						path.join(homeDir, '.claude', 'skills'),
+						path.join(homeDir, '.config', 'opencode', 'skill'),
+						path.join(homeDir, '.opencode', 'skill'),
+						path.join(process.cwd(), '.claude', 'skills'),
+					];
+
+					// Collect all skills from all directories
+					const allSkills: ISkillInfo[] = [];
+					const seenNames = new Set<string>();
+
+					for (const dir of skillDirs) {
+						const skills = scanSkillDirectory(dir);
+						for (const skill of skills) {
+							// Avoid duplicates by name
+							if (!seenNames.has(skill.name)) {
+								seenNames.add(skill.name);
+								allSkills.push(skill);
+							}
+						}
+					}
+
+					// Sort by name
+					allSkills.sort((a, b) => a.name.localeCompare(b.name));
+
+					if (allSkills.length === 0) {
+						return [{ name: 'No skills found', value: '' }];
+					}
+
+					return allSkills.map((skill) => ({
+						name: skill.name,
+						value: skill.name,
+						description: skill.description.length > 100
+							? skill.description.substring(0, 100) + '...'
+							: skill.description,
+					}));
+				} catch (error) {
+					console.error('Error loading skills:', error);
+					return [{ name: 'Error loading skills', value: '' }];
 				}
 			},
 		},

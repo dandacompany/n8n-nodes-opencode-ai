@@ -5,6 +5,7 @@ import { listMessages } from './list';
 import { getMessage } from './getMessage';
 import { executeCommand } from './command';
 import { executeShell } from './shell';
+import { executeSkill } from './skill';
 
 export async function executeMessageAction(
 	this: IExecuteFunctions,
@@ -24,9 +25,11 @@ export async function executeMessageAction(
 			return executeCommand.call(this, itemIndex);
 		case 'shell':
 			return executeShell.call(this, itemIndex);
+		case 'skill':
+			return executeSkill.call(this, itemIndex);
 		default:
 			throw new Error(`Unknown message operation: ${operation}`);
 	}
 }
 
-export { sendMessage, sendMessageAsync, listMessages, getMessage, executeCommand, executeShell };
+export { sendMessage, sendMessageAsync, listMessages, getMessage, executeCommand, executeShell, executeSkill };
