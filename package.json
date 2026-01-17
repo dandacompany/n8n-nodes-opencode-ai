@@ -1,6 +1,6 @@
 {
   "name": "n8n-nodes-opencode-ai",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "n8n node for OpenCode Server API - Session and message management for AI coding assistant",
   "keywords": [
     "n8n-community-node-package",
