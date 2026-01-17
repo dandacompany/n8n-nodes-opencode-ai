@@ -33,10 +33,20 @@ export async function executeCommand(
 	}
 
 	try {
-		// Build payload - arguments must be a string, not an object
+		// Build message text: /command arguments
+		// Using message API instead of command API because command API doesn't properly pass arguments
+		const commandText = commandArguments
+			? `/${command} ${commandArguments}`
+			: `/${command}`;
+
+		// Build payload using message API format with parts array
 		const payload: IDataObject = {
-			command,
-			arguments: commandArguments || '',
+			parts: [
+				{
+					type: 'text',
+					text: commandText,
+				},
+			],
 		};
 
 		// Add optional parameters
@@ -48,15 +58,15 @@ export async function executeCommand(
 			payload.agent = agent;
 		}
 
-		// model format: "providerID::modelID" -> convert to "providerID/modelID" string
+		// model format: "providerID::modelID" -> convert to {providerID, modelID} object for message API
 		if (model && model.includes('::')) {
-			// Command API expects model as string in format "providerID/modelID"
-			payload.model = model.replace('::', '/');
+			const [providerID, modelID] = model.split('::');
+			payload.model = { providerID, modelID };
 		}
 
 		const response = (await openCodeApiRequest.call(this, credentials, {
 			method: 'POST',
-			endpoint: `/session/${sessionId}/command`,
+			endpoint: `/session/${sessionId}/message`,
 			body: payload,
 			timeout,
 		})) as unknown as ISendMessageResponse;
