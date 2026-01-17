@@ -1,0 +1,67 @@
+# Source files (only dist/ is needed)
+src/
+assets/
+
+# Development files
+*.ts
+!*.d.ts
+tsconfig.json
+gulpfile.js
+.eslintrc*
+.prettierrc*
+
+# Build tools
+.cache/
+.history/
+*.tsbuildinfo
+
+# IDE and editor
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Test and coverage
+__tests__/
+test/
+tests/
+coverage/
+*.test.ts
+*.spec.ts
+jest.config.*
+vitest.config.*
+
+# Documentation (keep README.md and LICENSE)
+CLAUDE.md
+docs/
+
+# Scripts and development utilities
+scripts/
+
+# n8n local data
+.n8n/
+
+# Environment and secrets
+.env
+.env.*
+.npmrc
+
+# Logs
+*.log
+npm-debug.log*
+
+# Package artifacts
+*.tgz
+
+# Claude/AI assistant files
+.claude/

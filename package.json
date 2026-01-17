@@ -1,0 +1,67 @@
+{
+  "name": "n8n-nodes-opencode-ai",
+  "version": "0.1.0",
+  "description": "n8n node for OpenCode Server API - Session and message management for AI coding assistant",
+  "keywords": [
+    "n8n-community-node-package",
+    "opencode",
+    "ai",
+    "coding",
+    "session",
+    "automation"
+  ],
+  "license": "MIT",
+  "author": {
+    "name": "Dante Labs",
+    "email": "datapod.k@gmail.com"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/dandacompany/n8n-nodes-opencode-ai.git"
+  },
+  "main": "index.js",
+  "scripts": {
+    "build": "tsc && gulp build:icons",
+    "dev": "tsc --watch",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts",
+    "lint:fix": "eslint src --ext .ts --fix",
+    "prepublishOnly": "npm run build",
+    "link-dev": "npm run build && mkdir -p /tmp/n8n-dev-opencode/custom && ln -sf $(pwd) /tmp/n8n-dev-opencode/custom/n8n-nodes-opencode-ai"
+  },
+  "files": [
+    "dist"
+  ],
+  "n8n": {
+    "n8nNodesApiVersion": 1,
+    "credentials": [
+      "dist/credentials/OpenCodeApi.credentials.js"
+    ],
+    "nodes": [
+      "dist/nodes/OpenCode/OpenCode.node.js",
+      "dist/nodes/OpenCodeTool/OpenCodeTool.node.js",
+      "dist/nodes/OpenCodeChatModel/OpenCodeChatModel.node.js"
+    ]
+  },
+  "dependencies": {
+    "@langchain/core": "^0.3.0",
+    "zod": "^3.23.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    "eslint": "^8.57.0",
+    "eslint-plugin-n8n-nodes-base": "^1.16.1",
+    "gulp": "^4.0.2",
+    "n8n-workflow": "^1.82.0",
+    "rimraf": "^5.0.5",
+    "typescript": "~5.4.0"
+  },
+  "peerDependencies": {
+    "n8n-workflow": "^1.0.0"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

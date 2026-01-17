@@ -1,0 +1,60 @@
+# Dependencies
+node_modules/
+
+# Build output
+dist/
+*.tsbuildinfo
+
+# IDE and editors
+.idea/
+.vscode/
+*.swp
+*.swo
+*.sublime-*
+.project
+.classpath
+.settings/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# Logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+
+# Environment and secrets
+.env
+.env.*
+.npmrc
+
+# Test and coverage
+coverage/
+.nyc_output/
+
+# n8n local data
+.n8n/
+
+# Package artifacts
+*.tgz
+*.tar.gz
+
+# Cache directories
+.cache/
+.history/
+.temp/
+.tmp/
+
+# Development scripts (local only)
+scripts/
+
+# Claude/AI assistant files
+.claude/
+CLAUDE.md
