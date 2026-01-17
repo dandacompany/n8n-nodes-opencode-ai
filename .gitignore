@@ -58,3 +58,4 @@ scripts/
 # Claude/AI assistant files
 .claude/
 CLAUDE.md
+.opencode/

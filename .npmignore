@@ -65,3 +65,4 @@ npm-debug.log*
 
 # Claude/AI assistant files
 .claude/
+.opencode/

@@ -1009,30 +1009,98 @@ export class OpenCode implements INodeType {
 
 			async getSkills(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
 				try {
+					const credentials = await this.getCredentials('openCodeApi');
+					const baseUrl = credentials.baseUrl as string;
 					const homeDir = os.homedir();
 
-					// Skill directories to scan
-					const skillDirs = [
-						path.join(homeDir, '.claude', 'skills'),
-						path.join(homeDir, '.config', 'opencode', 'skill'),
-						path.join(homeDir, '.opencode', 'skill'),
-						path.join(process.cwd(), '.claude', 'skills'),
-						path.join(process.cwd(), '.opencode', 'skill'),
-					];
-
-					// Collect all skills from all directories
 					const allSkills: ISkillInfo[] = [];
 					const seenNames = new Set<string>();
 
-					for (const dir of skillDirs) {
+					// 1. Scan home directory skills (filesystem-based)
+					const homeSkillDirs = [
+						path.join(homeDir, '.claude', 'skills'),
+						path.join(homeDir, '.config', 'opencode', 'skill'),
+						path.join(homeDir, '.opencode', 'skill'),
+					];
+
+					for (const dir of homeSkillDirs) {
 						const skills = scanSkillDirectory(dir);
 						for (const skill of skills) {
-							// Avoid duplicates by name
 							if (!seenNames.has(skill.name)) {
 								seenNames.add(skill.name);
 								allSkills.push(skill);
 							}
 						}
+					}
+
+					// 2. Get project-local skills via OpenCode API
+					try {
+						const response = await this.helpers.request({
+							method: 'GET',
+							url: `${baseUrl}/find/file`,
+							qs: {
+								query: 'SKILL.md',
+								type: 'file',
+								limit: 100,
+							},
+							auth: {
+								user: credentials.username as string,
+								pass: credentials.password as string,
+							},
+							json: true,
+						});
+
+						const skillFiles = (Array.isArray(response) ? response : []) as string[];
+
+						// Filter for .claude/skills/ or .opencode/skill/ paths
+						for (const filePath of skillFiles) {
+							if (filePath.includes('.claude/skills/') || filePath.includes('.opencode/skill/')) {
+								// Extract skill name from path (parent directory name)
+								const parts = filePath.split('/');
+								const skillMdIndex = parts.findIndex((p) => p === 'SKILL.md');
+								if (skillMdIndex > 0) {
+									const skillName = parts[skillMdIndex - 1];
+									if (!seenNames.has(skillName)) {
+										seenNames.add(skillName);
+
+										// Try to get skill content for description
+										try {
+											const contentResponse = await this.helpers.request({
+												method: 'GET',
+												url: `${baseUrl}/file/content`,
+												qs: { path: filePath },
+												auth: {
+													user: credentials.username as string,
+													pass: credentials.password as string,
+												},
+												json: true,
+											});
+
+											const content = typeof contentResponse === 'string'
+												? contentResponse
+												: (contentResponse.content || '');
+											const { name, description } = parseSkillFrontmatter(content);
+
+											allSkills.push({
+												name: name || skillName,
+												description: description || `Skill: ${skillName}`,
+												path: filePath,
+											});
+										} catch {
+											// If content fetch fails, use directory name
+											allSkills.push({
+												name: skillName,
+												description: `Skill: ${skillName}`,
+												path: filePath,
+											});
+										}
+									}
+								}
+							}
+						}
+					} catch (apiError) {
+						console.error('Error fetching skills from API:', apiError);
+						// Continue with filesystem-based skills only
 					}
 
 					// Sort by name
