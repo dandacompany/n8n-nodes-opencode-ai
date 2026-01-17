@@ -48,10 +48,10 @@ export async function executeCommand(
 			payload.agent = agent;
 		}
 
-		// model format: "providerID::modelID"
+		// model format: "providerID::modelID" -> convert to "providerID/modelID" string
 		if (model && model.includes('::')) {
-			const [providerID, modelID] = model.split('::');
-			payload.model = { providerID, modelID };
+			// Command API expects model as string in format "providerID/modelID"
+			payload.model = model.replace('::', '/');
 		}
 
 		const response = (await openCodeApiRequest.call(this, credentials, {
