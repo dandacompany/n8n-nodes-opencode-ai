@@ -1052,9 +1052,9 @@ export class OpenCode implements INodeType {
 
 						const skillFiles = (Array.isArray(response) ? response : []) as string[];
 
-						// Filter for .claude/skills/ or .opencode/skill/ paths
+						// Filter for .claude/skills/ or .opencode/skill/ or .opencode/skills/ paths
 						for (const filePath of skillFiles) {
-							if (filePath.includes('.claude/skills/') || filePath.includes('.opencode/skill/')) {
+							if (filePath.includes('.claude/skills/') || filePath.includes('.opencode/skill/') || filePath.includes('.opencode/skills/')) {
 								// Extract skill name from path (parent directory name)
 								const parts = filePath.split('/');
 								const skillMdIndex = parts.findIndex((p) => p === 'SKILL.md');
