@@ -1017,6 +1017,7 @@ export class OpenCode implements INodeType {
 						path.join(homeDir, '.config', 'opencode', 'skill'),
 						path.join(homeDir, '.opencode', 'skill'),
 						path.join(process.cwd(), '.claude', 'skills'),
+						path.join(process.cwd(), '.opencode', 'skill'),
 					];
 
 					// Collect all skills from all directories
