@@ -597,6 +597,24 @@ export class OpenCode implements INodeType {
 				description: 'Arguments to pass to the skill',
 			},
 
+			// Referenced Files (for send, sendAsync, command, skill operations)
+			{
+				displayName: 'Reference Files',
+				name: 'referencedFiles',
+				type: 'multiOptions',
+				typeOptions: {
+					loadOptionsMethod: 'getFiles',
+				},
+				displayOptions: {
+					show: {
+						resource: ['message'],
+						operation: ['send', 'sendAsync', 'command', 'skill'],
+					},
+				},
+				default: [],
+				description: 'Select files to reference in the message (will be prepended as @filename)',
+			},
+
 			// Options for send/sendAsync operations
 			{
 				displayName: 'Options',
@@ -1033,6 +1051,51 @@ export class OpenCode implements INodeType {
 				} catch (error) {
 					console.error('Error loading skills:', error);
 					return [{ name: 'Error loading skills', value: '' }];
+				}
+			},
+
+			async getFiles(this: ILoadOptionsFunctions): Promise<INodePropertyOptions[]> {
+				try {
+					const credentials = await this.getCredentials('openCodeApi');
+					const baseUrl = credentials.baseUrl as string;
+
+					// Get file list from /find/file API
+					const response = await this.helpers.request({
+						method: 'GET',
+						url: `${baseUrl}/find/file`,
+						qs: {
+							query: '',
+							type: 'file',
+							limit: 200,
+						},
+						auth: {
+							user: credentials.username as string,
+							pass: credentials.password as string,
+						},
+						json: true,
+					});
+
+					const files = (Array.isArray(response) ? response : []) as string[];
+
+					if (files.length === 0) {
+						return [{ name: 'No files found', value: '' }];
+					}
+
+					// Sort files alphabetically
+					files.sort((a, b) => a.localeCompare(b));
+
+					return files.map((filePath) => {
+						// Extract filename from path
+						const fileName = filePath.split('/').pop() || filePath;
+						return {
+							name: fileName,
+							value: filePath,
+							description: filePath,
+						};
+					});
+				} catch (error) {
+					console.error('Error loading files:', error);
+					return [{ name: 'Error loading files', value: '' }];
 				}
 			},
 		},

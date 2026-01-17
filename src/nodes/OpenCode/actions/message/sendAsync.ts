@@ -10,6 +10,7 @@ export async function sendMessageAsync(
 	const message = this.getNodeParameter('message', itemIndex) as string;
 	const model = this.getNodeParameter('model', itemIndex, '') as string;
 	const options = this.getNodeParameter('options', itemIndex, {}) as IDataObject;
+	const referencedFiles = this.getNodeParameter('referencedFiles', itemIndex, []) as string[];
 
 	// Extract options with defaults
 	const timeout = (options.timeout as number) ?? 300000;
@@ -32,8 +33,15 @@ export async function sendMessageAsync(
 	}
 
 	try {
+		// Build message text with file references
+		let messageText = message;
+		if (referencedFiles.length > 0) {
+			const fileRefs = referencedFiles.map((filePath) => `@${filePath}`).join(' ');
+			messageText = `${fileRefs}\n\n${message}`;
+		}
+
 		const payload: IDataObject = {
-			parts: [{ type: 'text', text: message }],
+			parts: [{ type: 'text', text: messageText }],
 		};
 
 		// model format: "providerID::modelID"

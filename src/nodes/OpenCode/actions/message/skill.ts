@@ -12,6 +12,7 @@ export async function executeSkill(
 	const skillArguments = this.getNodeParameter('skillArguments', itemIndex, '') as string;
 	const model = this.getNodeParameter('model', itemIndex, '') as string;
 	const options = this.getNodeParameter('options', itemIndex, {}) as IDataObject;
+	const referencedFiles = this.getNodeParameter('referencedFiles', itemIndex, []) as string[];
 
 	// Extract options with defaults
 	const timeout = (options.timeout as number) ?? 300000;
@@ -35,9 +36,15 @@ export async function executeSkill(
 	try {
 		// Build message text: /skill-name arguments
 		// Using message API with slash command format
-		const skillText = skillArguments
+		let skillText = skillArguments
 			? `/${skill} ${skillArguments}`
 			: `/${skill}`;
+
+		// Prepend file references if any
+		if (referencedFiles.length > 0) {
+			const fileRefs = referencedFiles.map((filePath) => `@${filePath}`).join(' ');
+			skillText = `${fileRefs}\n\n${skillText}`;
+		}
 
 		// Build payload using message API format with parts array
 		const payload: IDataObject = {

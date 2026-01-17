@@ -12,6 +12,7 @@ export async function executeCommand(
 	const commandArguments = this.getNodeParameter('commandArguments', itemIndex, '') as string;
 	const model = this.getNodeParameter('model', itemIndex, '') as string;
 	const options = this.getNodeParameter('options', itemIndex, {}) as IDataObject;
+	const referencedFiles = this.getNodeParameter('referencedFiles', itemIndex, []) as string[];
 
 	// Extract options with defaults
 	const timeout = (options.timeout as number) ?? 300000;
@@ -35,9 +36,15 @@ export async function executeCommand(
 	try {
 		// Build message text: /command arguments
 		// Using message API instead of command API because command API doesn't properly pass arguments
-		const commandText = commandArguments
+		let commandText = commandArguments
 			? `/${command} ${commandArguments}`
 			: `/${command}`;
+
+		// Prepend file references if any
+		if (referencedFiles.length > 0) {
+			const fileRefs = referencedFiles.map((filePath) => `@${filePath}`).join(' ');
+			commandText = `${fileRefs}\n\n${commandText}`;
+		}
 
 		// Build payload using message API format with parts array
 		const payload: IDataObject = {
