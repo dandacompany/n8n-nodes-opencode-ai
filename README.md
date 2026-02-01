@@ -176,7 +176,7 @@ This is an independent community node and is not officially affiliated with or e
 
 **Developed and maintained by Dante Labs**
 
-- **Homepage**: [dante-datalab.com](https://dante-datalab.com)
+- **Homepage**: [dante-labs.com](https://dante-labs.com)
 - **YouTube**: [@dante-labs](https://youtube.com/@dante-labs)
 - **Discord**: [Dante Labs Community](https://discord.com/invite/rXyy5e9ujs)
 - **Email**: datapod.k@gmail.com
